@@ -9,9 +9,11 @@ import {
 	Query,
 	Resolver,
 } from 'type-graphql'
-import { COOKIE_NAME } from '../constants'
+import { v4 } from 'uuid'
+import { COOKIE_NAME, FORGOT_PASSWORD_PREFIX } from '../constants'
 import { User } from '../entities/User'
 import { MyContext } from '../types'
+import { sendEmail } from '../utils/sendEmail'
 import { validateRegister } from '../utils/validateRegister'
 import { UsernamePasswordInput } from './UsernamePasswordInput'
 
@@ -35,12 +37,31 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
-	// @Mutation(() => Boolean)
-	// async forgotPassword(@Arg("email") email: string, @Ctx() {em}: MyContext
-	// ) {
-	// 	// const user = await em.findOne(User, {email})
-	// 	return true
-	// }
+	@Mutation(() => Boolean)
+	async forgotPassword(
+		@Arg('email') email: string,
+		@Ctx() { em, redis }: MyContext
+	) {
+		const user = await em.findOne(User, { email })
+		if (!user) {
+			return true
+		}
+
+		const token = v4()
+		await redis.set(
+			FORGOT_PASSWORD_PREFIX + token,
+			user.id,
+			'ex',
+			1000 * 60 * 60 * 24 * 3
+		) // 3 days
+
+		await sendEmail(
+			email,
+			`<a href="http://localhost:3000/change-password/${token}">Reset Password</a>`
+		)
+
+		return true
+	}
 
 	@Query(() => User, { nullable: true })
 	async me(@Ctx() { req, em }: MyContext) {
