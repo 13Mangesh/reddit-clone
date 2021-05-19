@@ -14,17 +14,21 @@ import { HelloResolver } from './resolvers/hello'
 import { PostResolver } from './resolvers/post'
 import { UserResolver } from './resolvers/user'
 import { MyContext } from './types'
+import path from 'path'
 
 const main = async () => {
-	await createConnection({
+	const conn = await createConnection({
 		type: 'postgres',
 		database: 'reddit-clone2',
 		username: 'mangesh',
 		password: 'mangesh',
 		logging: true,
 		synchronize: true,
+		migrations: [path.join(__dirname, './migrations/*')],
 		entities: [Post, User],
 	})
+	conn.runMigrations()
+
 	const app = express()
 
 	const RedisStore = connectRedis(session)
