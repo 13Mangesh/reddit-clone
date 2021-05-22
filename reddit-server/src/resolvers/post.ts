@@ -42,6 +42,42 @@ export class PostResolver {
 		return root.text.slice(0, 50)
 	}
 
+	@Mutation(() => Boolean)
+	@UseMiddleware(isAuthenticated)
+	async vote(
+		@Arg('postId', () => Int) postId: number,
+		@Arg('value', () => Int) value: number,
+		@Ctx() { req }: MyContext
+	) {
+		const { userId } = req.session
+		// Following two lines are for preventing users to pass value more than 1 or less than -1
+
+		const isUpdoot = value !== -1
+		const realValue = isUpdoot ? 1 : -1
+		// await Updoot.insert({
+		// 	userId,
+		// 	postId,
+		// 	value: realValue,
+		// })
+
+		// By making transaction we can assure if one query fails another will also fail
+		await getConnection().query(
+			`
+			START TRANSACTION;
+
+			insert into updoot ("userId", "postId", value)
+			values (${userId}, ${postId}, ${realValue});
+
+			update post
+			set points = points + ${realValue}
+			where id = ${postId};
+
+			COMMIT;
+			`
+		)
+		return true
+	}
+
 	// We can use offset instead of cursor
 	@Query(() => PaginatedPosts)
 	async posts(
