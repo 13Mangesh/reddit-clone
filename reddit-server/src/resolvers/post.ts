@@ -14,6 +14,7 @@ import {
 } from 'type-graphql'
 import { getConnection } from 'typeorm'
 import { Post } from '../entities/Post'
+import { Updoot } from '../entities/Updoot'
 import { isAuthenticated } from '../middleware/isAuthenticated'
 import { MyContext } from '../types'
 
@@ -54,27 +55,67 @@ export class PostResolver {
 
 		const isUpdoot = value !== -1
 		const realValue = isUpdoot ? 1 : -1
-		// await Updoot.insert({
-		// 	userId,
-		// 	postId,
-		// 	value: realValue,
-		// })
 
-		// By making transaction we can assure if one query fails another will also fail
-		await getConnection().query(
-			`
-			START TRANSACTION;
+		const updoot = await Updoot.findOne({ where: { userId, postId } })
 
-			insert into updoot ("userId", "postId", value)
-			values (${userId}, ${postId}, ${realValue});
+		// User has voted before and wants to change their vote (from upvote to downvote & v.v)
+		if (updoot && updoot.value !== realValue) {
+			getConnection().transaction(async (tm) => {
+				await tm.query(
+					`
+					update updoot
+					set value = $1
+					where "postId" = $2 and "userId" = $3
+				`,
+					[realValue, postId, userId]
+				)
 
-			update post
-			set points = points + ${realValue}
-			where id = ${postId};
+				await tm.query(
+					`
+					update post
+					set points = points + $1
+					where id = $2
+				`,
+					[2 * realValue, postId]
+				)
+			})
+		} else if (!updoot) {
+			// User never voted before
+			// By making transaction we can assure if one query fails another will also fail
+			await getConnection().transaction(async (tm) => {
+				await tm.query(
+					`
+				insert into updoot ("userId", "postId", value)
+				values ($1, $2, $3)
+				`,
+					[userId, postId, realValue]
+				)
 
-			COMMIT;
-			`
-		)
+				await tm.query(
+					`
+				update post
+				set points = points + $1
+				where id = $2
+				`,
+					[realValue, postId]
+				)
+			})
+		}
+
+		// await getConnection().query(
+		// 	`
+		// 	START TRANSACTION;
+
+		// 	insert into updoot ("userId", "postId", value)
+		// 	values (${userId}, ${postId}, ${realValue});
+
+		// 	update post
+		// 	set points = points + ${realValue}
+		// 	where id = ${postId};
+
+		// 	COMMIT;
+		// 	`
+		// )
 		return true
 	}
 
@@ -82,7 +123,8 @@ export class PostResolver {
 	@Query(() => PaginatedPosts)
 	async posts(
 		@Arg('limit', () => Int) limit: number,
-		@Arg('cursor', () => String, { nullable: true }) cursor: string | null
+		@Arg('cursor', () => String, { nullable: true }) cursor: string | null,
+		@Ctx() { req }: MyContext
 	): Promise<PaginatedPosts> {
 		const realLimit = Math.min(50, limit)
 		// +1 for fetching one more post let's say we want 10 posts and we'll fetch 11 posts
@@ -91,8 +133,14 @@ export class PostResolver {
 
 		const replacements: any[] = [realLimitPlusOne]
 
+		if (req.session.userId) {
+			replacements.push(req.session.userId)
+		}
+
+		let cursorIndex = 3
 		if (cursor) {
 			replacements.push(new Date(parseInt(cursor)))
+			cursorIndex = replacements.length
 		}
 
 		const posts = await getConnection().query(
@@ -104,10 +152,15 @@ export class PostResolver {
 				'email', u.email,
 				'createdAt', u."createdAt",
 				'updatedAt', u."updatedAt"
-			) as creator
+			) as creator,
+			${
+				req.session.userId
+					? '(select value from updoot where "userId" = $2 and "postId" = p.id) "voteStatus"'
+					: 'null as "voteStatus"'
+			}
 			from post p
 			inner join public.user u on u.id = p."creatorId"
-			${cursor ? `where p."createdAt" < $2` : ''}
+			${cursor ? `where p."createdAt" < $${cursorIndex}` : ''}
 			order by p."createdAt" DESC
 			limit $1
 		`,
