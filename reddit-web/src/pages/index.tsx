@@ -10,7 +10,7 @@ import { createUrqlClient } from '../utils/createUrqlClient'
 
 const Index = () => {
 	const [variables, setVariables] = useState({
-		limit: 10,
+		limit: 15,
 		cursor: null as null | string,
 	})
 	const [{ data, fetching }] = usePostsQuery({
@@ -42,6 +42,7 @@ const Index = () => {
 							<Heading Heading fontSize="xl">
 								{p.title}
 							</Heading>
+							<Text>Posted By - {p.creator.username}</Text>
 							<Text mt={4}>{p.textSnippet}</Text>
 						</Box>
 					))}
