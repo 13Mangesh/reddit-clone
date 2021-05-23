@@ -1,13 +1,13 @@
-import { Button, IconButton } from '@chakra-ui/button'
-import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons'
+import { Button } from '@chakra-ui/button'
+import { DeleteIcon } from '@chakra-ui/icons'
 import { Link, Stack } from '@chakra-ui/layout'
-import { Box, Flex, Heading, Text } from '@chakra-ui/react'
+import { Box, Flex, Heading, Text, IconButton } from '@chakra-ui/react'
 import { withUrqlClient } from 'next-urql'
 import NextLink from 'next/link'
 import React, { useState } from 'react'
 import { Layout } from '../components/Layout'
 import { UpdootSection } from '../components/UpdootSection'
-import { usePostsQuery } from '../generated/graphql'
+import { useDeletePostMutation, usePostsQuery } from '../generated/graphql'
 import { createUrqlClient } from '../utils/createUrqlClient'
 
 const Index = () => {
@@ -15,6 +15,7 @@ const Index = () => {
 		limit: 15,
 		cursor: null as null | string,
 	})
+	const [, deletePost] = useDeletePostMutation()
 	const [{ data, fetching }] = usePostsQuery({
 		variables,
 	})
@@ -29,22 +30,37 @@ const Index = () => {
 				<div>loading ........</div>
 			) : (
 				<Stack spacing={8}>
-					{data!.posts.posts.map((p) => (
-						<Flex key={p.id} p={5} shadow="md" borderWidth="1px">
-							<UpdootSection post={p} />
-							<Box>
-								<NextLink href="/post/[id]" as={`/post/${p.id}`}>
-									<Link>
-										<Heading Heading fontSize="xl">
-											{p.title}
-										</Heading>
-									</Link>
-								</NextLink>
-								<Text>Posted By - {p.creator.username}</Text>
-								<Text mt={4}>{p.textSnippet}</Text>
-							</Box>
-						</Flex>
-					))}
+					{data!.posts.posts.map((p) =>
+						// This ternery expression is for when cache invalidate post after delete and set it to null
+						// so that data.posts.posts could contain null value
+						!p ? null : (
+							<Flex key={p.id} p={5} shadow="md" borderWidth="1px">
+								<UpdootSection post={p} />
+								<Box flex={1}>
+									<NextLink href="/post/[id]" as={`/post/${p.id}`}>
+										<Link>
+											<Heading Heading fontSize="xl">
+												{p.title}
+											</Heading>
+										</Link>
+									</NextLink>
+									<Text>Posted By - {p.creator.username}</Text>
+									<Flex align="center">
+										<Text mt={4}>{p.textSnippet}</Text>
+										<IconButton
+											onClick={() => {
+												deletePost({ id: p.id })
+											}}
+											ml="auto"
+											colorScheme="whiteAlpha"
+											aria-label="Delete-post"
+											icon={<DeleteIcon color="red.600" boxSize={6} />}
+										></IconButton>
+									</Flex>
+								</Box>
+							</Flex>
+						)
+					)}
 				</Stack>
 			)}
 			{data && data.posts.hasMore ? (
