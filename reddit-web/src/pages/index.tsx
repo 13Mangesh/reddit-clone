@@ -1,6 +1,6 @@
 import { Button, IconButton } from '@chakra-ui/button'
 import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons'
-import { Stack } from '@chakra-ui/layout'
+import { Link, Stack } from '@chakra-ui/layout'
 import { Box, Flex, Heading, Text } from '@chakra-ui/react'
 import { withUrqlClient } from 'next-urql'
 import NextLink from 'next/link'
@@ -25,16 +25,6 @@ const Index = () => {
 
 	return (
 		<Layout variant="regular">
-			<Flex align="center">
-				<Heading>Reddit-Clone</Heading>
-
-				<NextLink href="/create-post">
-					<Button ml="auto" variant="outline" colorScheme="orange">
-						Create Post
-					</Button>
-				</NextLink>
-			</Flex>
-			<br />
 			{!data && fetching ? (
 				<div>loading ........</div>
 			) : (
@@ -43,9 +33,13 @@ const Index = () => {
 						<Flex key={p.id} p={5} shadow="md" borderWidth="1px">
 							<UpdootSection post={p} />
 							<Box>
-								<Heading Heading fontSize="xl">
-									{p.title}
-								</Heading>
+								<NextLink href="/post/[id]" as={`/post/${p.id}`}>
+									<Link>
+										<Heading Heading fontSize="xl">
+											{p.title}
+										</Heading>
+									</Link>
+								</NextLink>
 								<Text>Posted By - {p.creator.username}</Text>
 								<Text mt={4}>{p.textSnippet}</Text>
 							</Box>
