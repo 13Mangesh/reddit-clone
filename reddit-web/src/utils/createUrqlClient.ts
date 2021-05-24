@@ -1,4 +1,4 @@
-import { cacheExchange, Resolver } from '@urql/exchange-graphcache'
+import { cacheExchange, Resolver, Cache } from '@urql/exchange-graphcache'
 import gql from 'graphql-tag'
 import Router from 'next/router'
 import {
@@ -122,6 +122,14 @@ export const cursorPagination = (): Resolver => {
 	}
 }
 
+const invalidateAllPosts = (cache: Cache) => {
+	const allFields = cache.inspectFields('Query')
+	const fieldInfos = allFields.filter((info) => info.fieldName === 'posts')
+	fieldInfos.forEach((fi) => {
+		cache.invalidate('Query', 'posts', fi.arguments || {})
+	})
+}
+
 export const createUrqlClient = (ssrExchange: any, ctx: any) => {
 	// We have to send cookie when index page first loads from ssr to display
 	// VoteStatus as votestatus query needs it
@@ -192,13 +200,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
 							}
 						},
 						createPost: (_result, args, cache, info) => {
-							const allFields = cache.inspectFields('Query')
-							const fieldInfos = allFields.filter(
-								(info) => info.fieldName === 'posts'
-							)
-							fieldInfos.forEach((fi) => {
-								cache.invalidate('Query', 'posts', fi.arguments || {})
-							})
+							invalidateAllPosts(cache)
 						},
 						logout: (_result, args, cache, info) => {
 							betterUpdateQuery<LogoutMutation, MeQuery>(
@@ -223,6 +225,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
 									}
 								}
 							)
+							invalidateAllPosts(cache)
 						},
 						register: (_result, args, cache, info) => {
 							betterUpdateQuery<RegisterMutation, MeQuery>(
