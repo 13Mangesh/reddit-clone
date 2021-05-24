@@ -15,12 +15,17 @@ const Index = () => {
 		limit: 15,
 		cursor: null as null | string,
 	})
-	const [{ data, fetching }] = usePostsQuery({
+	const [{ data, error, fetching }] = usePostsQuery({
 		variables,
 	})
 
 	if (!fetching && !data) {
-		return <div>The data fetching is failed</div>
+		return (
+			<div>
+				<div>The data fetching is failed</div>
+				<div>{error?.message}</div>
+			</div>
+		)
 	}
 
 	return (
