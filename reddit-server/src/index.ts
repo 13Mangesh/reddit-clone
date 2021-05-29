@@ -25,10 +25,16 @@ const main = async () => {
 		type: 'postgres',
 		url: process.env.DATABASE_URL,
 		logging: true,
-		synchronize: true,
+		synchronize: !__prod__,
 		migrations: [path.join(__dirname, './migrations/*')],
 		entities: [Post, User, Updoot],
 	})
+
+	// ormconfig.json is temporary file used so that following command can run
+	// npx typeorm migration:generate -n Initial
+
+	// Due to we have run the migration here, so when we upload docker image, it'll run migrations
+	// In the migrations folder and thus will create the tables.
 	conn.runMigrations()
 	// await Updoot.delete({})
 	// await Post.delete({})
@@ -37,6 +43,7 @@ const main = async () => {
 
 	const RedisStore = connectRedis(session)
 	const redis = new Redis(process.env.REDIS_URL)
+	app.set('proxy', 1)
 	app.use(
 		cors({
 			origin: process.env.CORS_ORIGIN,
