@@ -1,2 +1,4 @@
 /node_modules
 /dist
+# We should add .env in gitignore
+# .env

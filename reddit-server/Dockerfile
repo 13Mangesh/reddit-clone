@@ -11,6 +11,8 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+# Provide a file with envs which are not provided by Dokku
+COPY .env.production .env
 
 RUN npm run build
 
