@@ -13,8 +13,8 @@ export const EditDeletePostButton: React.FC<EditDeletePostButtonProps> = ({
 	id,
 	creatorId,
 }) => {
-	const [, deletePost] = useDeletePostMutation()
-	const [{ data: meData }] = useMeQuery()
+	const [deletePost] = useDeletePostMutation()
+	const { data: meData } = useMeQuery()
 
 	if (meData?.me?.id !== creatorId) {
 		return null
@@ -32,7 +32,7 @@ export const EditDeletePostButton: React.FC<EditDeletePostButtonProps> = ({
 			</NextLink>
 			<IconButton
 				onClick={() => {
-					deletePost({ id })
+					deletePost({ variables: { id } })
 				}}
 				colorScheme="whiteAlpha"
 				aria-label="Delete-post"

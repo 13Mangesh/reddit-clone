@@ -35,7 +35,7 @@ const main = async () => {
 
 	// Due to we have run the migration here, so when we upload docker image, it'll run migrations
 	// In the migrations folder and thus will create the tables.
-	conn.runMigrations()
+	// conn.runMigrations()
 	// await Updoot.delete({})
 	// await Post.delete({})
 

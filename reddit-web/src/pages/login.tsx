@@ -14,13 +14,13 @@ interface loginProps {}
 
 const Login: React.FC<loginProps> = ({}) => {
 	const router = useRouter()
-	const [, login] = useLoginMutation()
+	const [login] = useLoginMutation()
 	return (
 		<Wrapper variant="small">
 			<Formik
 				initialValues={{ usernameOrEmail: '', password: '' }}
 				onSubmit={async (values, { setErrors }) => {
-					const response = await login(values)
+					const response = await login({ variables: values })
 					console.log(response)
 					if (response.data?.login.errors) {
 						setErrors(toErrorMap(response.data.login.errors))
@@ -68,4 +68,4 @@ const Login: React.FC<loginProps> = ({}) => {
 	)
 }
 
-export default withUrqlClient(createUrqlClient)(Login)
+export default Login
