@@ -1,13 +1,12 @@
 import { Box, Button } from '@chakra-ui/react'
 import { Form, Formik } from 'formik'
-import { withUrqlClient } from 'next-urql'
 import { useRouter } from 'next/router'
 import React from 'react'
 import { InputField } from '../components/InputField'
 import { Layout } from '../components/Layout'
 import { useCreatePostMutation } from '../generated/graphql'
-import { createUrqlClient } from '../utils/createUrqlClient'
 import { useIsAuthenticated } from '../utils/isAuthenticated'
+import { withApollo } from '../utils/withApollo'
 
 const CreatePost: React.FC<{}> = ({}) => {
 	const [createPost] = useCreatePostMutation()
@@ -18,7 +17,20 @@ const CreatePost: React.FC<{}> = ({}) => {
 			<Formik
 				initialValues={{ title: '', text: '' }}
 				onSubmit={async (values) => {
-					const { errors } = await createPost({ variables: { input: values } })
+					const { errors } = await createPost({
+						variables: { input: values },
+						update: (cache, { data: createPost }) => {
+							// https://dev.to/lucis/update-apollo-cache-after-a-mutation-and-get-instant-benefits-on-your-ui-1c3b
+							console.log('createpost', createPost)
+							console.log(cache)
+							cache.evict({
+								fieldName: 'posts:{}',
+								// id: 'ROOT_QUERY',
+								// broadcast: false,
+							})
+							// cache.gc()
+						},
+					})
 					if (!errors) {
 						router.push('/')
 					}
@@ -50,4 +62,4 @@ const CreatePost: React.FC<{}> = ({}) => {
 	)
 }
 
-export default CreatePost
+export default withApollo({ ssr: false })(CreatePost)

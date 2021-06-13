@@ -8,6 +8,7 @@ import { Layout } from '../../../components/Layout'
 import { usePostQuery, useUpdatePostMutation } from '../../../generated/graphql'
 import { createUrqlClient } from '../../../utils/createUrqlClient'
 import { useGetIntId } from '../../../utils/useGetIntId'
+import { withApollo } from '../../../utils/withApollo'
 
 const EditPost = ({}) => {
 	// We don't have to update cache in case of update as we are returning a post
@@ -73,4 +74,4 @@ const EditPost = ({}) => {
 	)
 }
 
-export default EditPost
+export default withApollo({ ssr: false })(EditPost)

@@ -2,6 +2,7 @@ import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client'
 import { ChakraProvider, ColorModeProvider } from '@chakra-ui/react'
 import { PaginatedPosts } from '../generated/graphql'
 import theme from '../theme'
+import { withApollo } from '../utils/withApollo'
 
 const client = new ApolloClient({
 	uri: process.env.NEXT_PUBLIC_API_URL as string,
@@ -44,4 +45,4 @@ function MyApp({ Component, pageProps }: any) {
 	)
 }
 
-export default MyApp
+export default withApollo({ ssr: false })(MyApp)

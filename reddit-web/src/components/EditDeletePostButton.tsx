@@ -32,7 +32,12 @@ export const EditDeletePostButton: React.FC<EditDeletePostButtonProps> = ({
 			</NextLink>
 			<IconButton
 				onClick={() => {
-					deletePost({ variables: { id } })
+					deletePost({
+						variables: { id },
+						update: (cache) => {
+							cache.evict({ id: 'Post:' + id })
+						},
+					})
 				}}
 				colorScheme="whiteAlpha"
 				aria-label="Delete-post"
